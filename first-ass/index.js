@@ -10,29 +10,23 @@ app.get('/', function (req, res) {
 
 // USER DATABASE
 const users = []
-let id = 0
 
 // REGISTRATION
-app.post('/users', function(req, res) {
+app.post('/users/register', function(req, res) {
     const { firstName, lastName, password, email } = req.body
     if (!firstName || !lastName || !password || !email ) {
         return res.status(400).json({
-            status: 'Failed',
+            status: 'Fail',
             message: 'Incomplete registration details',
         })
     }
     if (users.find((el) => el.email === email)) {
         return res.status(409).json({
-            status: 'Failed',
-            message: 'Email already exists!'
+            status: 'Fail',
+            message: 'User already exists!'
         })
     }
-    id += 1
-    newBody = {
-        id,
-        ...req.body
-    }
-    users.push(newBody)
+    users.push(req.body)
     res.status(201).json({
         status: 'Success',
         message: 'You have been registered successfully. Please login with your email and password'
@@ -45,26 +39,26 @@ app.get('/users', function(req, res) {
 });
 
 // LOGIN
-app.get('/users/login', function(req, res){
+app.post('/users/login', function(req, res){
     const { email, password } = req.body
     if (!email || !password) {
         return res.status(400).json({
-            status: 'Failed',
-            message: 'Incomplete registration details',
+            status: 'Fail',
+            message: 'Incomplete login details',
         })
     }
-    const currentUser = users.find((el) => el.email === email)
-    if (currentUser) {
-        if (currentUser.password === password) {
+    const user = users.find((el) => el.email === email)
+    if (user) {
+        if (user.password === password) {
             return res.status(200).json({
                 status: 'Success',
                 message: 'You have logged in successfully',
-                data: currentUser,
+                data: user,
             })
         }
         res.status(401).json({
-            status: 'Failed',
-            message: 'Wrong password!',
+            status: 'Fail',
+            message: 'Invalid login details!',
         })
     }
     else {
@@ -76,29 +70,26 @@ app.get('/users/login', function(req, res){
 })
 
 // UPDATING NAME AND PASSWORD
-app.put('/users/:userId', function(req, res){
-    const { userId } = req.params
-    const { email, firstName, lastName, password} = req.body
-    const currentUser = users.find((el) => `${el.id}` === userId)
-    if (currentUser) {
-        if (email) {
-            return res.status(403).json({
-                status: 'Forbidden',
-                message: 'User is not allowed to edit email',
-            })
+app.put('/users/:email', function(req, res){
+    const { email } = req.params
+    if (req.body.email) {
+        return res.status(400).json({
+            status: 'Fail',
+            message: 'Invalid parameters',
+        })
+    }
+    const user = users.find((el) => el.email === email)
+    if (user) {
+        const currentUser = { 
+            ...user,
+            ...req.body,
         }
-        const newData = { 
-            ...currentUser,
-            firstName: firstName,
-            lastName: lastName,
-            password: password,
-        }
-        const index = users.findIndex((el) => el.id === Number(newData.id))
-        users[index] = newData;
+        const index = users.findIndex((el) => el.email === email)
+        users[index] = currentUser;
         res.status(200).json({
             status: 'Success',
             message: `User details have been updated successfully`,
-            data: newData,
+            data: currentUser,
         }) 
     }
     res.status(404).json({
